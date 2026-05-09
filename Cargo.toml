@@ -1,0 +1,30 @@
+[package]
+name = "proxy"
+version = "0.1.0"
+edition = "2024"
+
+[profile.dev]
+debug = 0
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[lints.rust]
+unsafe_code = "forbid"
+# while developing, allow dead code and unused imports/variables
+dead_code = { level = "allow", priority = -1 }
+unused = { level = "allow", priority = -1 }
+
+
+[dependencies]
+# config lib
+toml = "1.1.2"
+
+# -- Json
+serde = { version = "1.0", features = ["derive"] }
+
+# -- Others
+thiserror = "2.0"
+chrono = { version = "0.4", features = ["serde"] }
