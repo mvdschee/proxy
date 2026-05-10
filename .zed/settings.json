@@ -1,0 +1,32 @@
+{
+   "languages": {
+      "Rust": {
+         "format_on_save": "on",
+         "formatter": "language_server",
+         "code_actions_on_format": {
+            "source.organizeImports": true
+         }
+      }
+   },
+   "lsp": {
+      "rust-analyzer": {
+         "initialization_options": {
+            "check": {
+               "command": "clippy",
+               "extraArgs": [
+                  "--",
+                  "-D",
+                  "warnings"
+               ]
+            },
+            "checkOnSave": true,
+            "rustfmt": {
+               "extraArgs": [
+                  "--config-path",
+                  ".rustfmt.toml"
+               ]
+            },
+         }
+      }
+   }
+}

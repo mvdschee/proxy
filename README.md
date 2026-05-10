@@ -18,4 +18,5 @@ For this one I don't want to use AI to write the code. I want to keep my skills 
 
 - research about the project
 - cleanup of the README and other text
+- setup my zed config for linting/checking/security
 - discussion about code solutions

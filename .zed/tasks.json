@@ -1,0 +1,26 @@
+[
+   {
+      "label": "foxguard: scan",
+      "command": "foxguard --config .foxguard.yml",
+      "cwd": "$ZED_WORKTREE_ROOT",
+      "reveal": "always",
+      "use_new_terminal": false,
+      "allow_concurrent_runs": false
+   },
+   {
+      "label": "foxguard: watch",
+      "command": "watchexec -q -c -w src -w .foxguard.yml --exts rs,toml,yml -- foxguard --config .foxguard.yml",
+      "cwd": "$ZED_WORKTREE_ROOT",
+      "reveal": "always",
+      "use_new_terminal": false,
+      "allow_concurrent_runs": false
+   },
+   {
+      "label": "cargo: clippy",
+      "command": "cargo clippy --all-targets -- -D warnings",
+      "cwd": "$ZED_WORKTREE_ROOT",
+      "reveal": "always",
+      "use_new_terminal": false,
+      "allow_concurrent_runs": false
+   }
+]
