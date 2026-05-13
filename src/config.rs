@@ -11,8 +11,8 @@ use std::{env, fs};
 
 const CONFIG_PATH_ENV: &str = "CONFIG_PATH";
 const CERT_DIR: &str = ".certs/";
-// in milliseconds
-const CERT_BACKGROUND_TASK_INTERVAL: u64 = 250;
+// in seconds
+const CERT_BACKGROUND_TASK_INTERVAL: u64 = 120;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {

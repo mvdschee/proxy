@@ -4,6 +4,7 @@ use crate::{
 };
 pub use error::{Error, Result};
 use std::env;
+use tokio::signal;
 
 mod config;
 mod core;
@@ -20,16 +21,14 @@ async fn main() -> Result<()> {
 
 	// generate any missing certificates
 	// and spin up background tasks to refresh certificates
-
-	let cert_handler = HandleCertificates::new(
-		config.cert_dir.clone(),
-		config.email.clone(),
-		config.routes.clone(),
-	);
+	let cert_handler =
+		HandleCertificates::new(config.cert_dir, config.email, config.routes, config.task_interval);
 
 	cert_handler.run().await?;
 
 	// start the proxy
+
+	signal::ctrl_c().await.map_err(|_| Error::MainLoopClosed)?;
 
 	Err(Error::MainLoopClosed)
 }

@@ -1,9 +1,13 @@
 use crate::{
 	Result,
 	config::Acme,
-	core::models::{
-		certs::{CertDir, Certificate, Email},
-		routes::Route,
+	core::{
+		handlers::certs::{background_certs_task, initial_certs},
+		models::{
+			certs::{CertDir, Certificate, Email},
+			routes::Route,
+			tasks::TaskInterval,
+		},
 	},
 	info,
 };
@@ -25,6 +29,7 @@ impl HandleFileSystem {
 		info!("setup filesystem...");
 
 		// foxguard: ignore[rs/no-path-traversal]
+		// no user input is used here, so we can safely use Path::new directly
 		if !Path::new(self.cert_dir.as_str()).exists() {
 			info!("creating cert directory at {}", &self.cert_dir);
 			std::fs::create_dir_all(self.cert_dir.as_str())?;
@@ -38,10 +43,16 @@ impl HandleFileSystem {
 
 pub struct HandleCertificates {
 	certificates: Vec<Certificate>,
+	task_interval: TaskInterval,
 }
 
 impl HandleCertificates {
-	pub fn new(cert_dir: CertDir, email: Email, routes: Vec<Route>) -> Self {
+	pub fn new(
+		cert_dir: CertDir,
+		email: Email,
+		routes: Vec<Route>,
+		task_interval: TaskInterval,
+	) -> Self {
 		let certificates = routes
 			.into_iter()
 			.map(|route| Certificate {
@@ -52,18 +63,18 @@ impl HandleCertificates {
 			})
 			.collect::<Vec<Certificate>>();
 
-		dbg!(&certificates);
-
 		Self {
-			certificates: Vec::new(),
+			certificates,
+			task_interval,
 		}
 	}
 
 	pub async fn run(self) -> Result<()> {
-		info!("starting certificates tasks...");
+		initial_certs(self.certificates.clone()).await?;
 
 		spawn(async move {
-			info!("running certificates tasks...");
+			info!("starting certificates tasks...");
+			background_certs_task(self.certificates, self.task_interval).await;
 		});
 
 		Ok(())

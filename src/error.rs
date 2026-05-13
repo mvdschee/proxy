@@ -16,6 +16,9 @@ pub enum Error {
 	#[error("file system error: {0}")]
 	FileSystem(String),
 
+	#[error("certificate error: {0}")]
+	Certificate(String),
+
 	#[error("config error: {0}")]
 	Config(String),
 

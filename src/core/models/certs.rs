@@ -3,7 +3,7 @@ use serde::Deserialize;
 use std::fmt;
 use std::ops::Deref;
 
-#[derive(Debug, Clone, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum CertificateType {
 	SelfSigned,
