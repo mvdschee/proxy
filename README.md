@@ -4,11 +4,11 @@ I normally use `nginxproxy/nginx-proxy` as my proxy on my self-hosted projects, 
 
 ## Development roadmap
 
-- setup [hardened docker image](https://hub.docker.com/hardened-images/catalog)
-- add TOML config for domains (host: example.com, tls: self-signed|acme, upstream: 127.0.0.1:3000)
-- setup init process to parse config
-- check SSL certs exist (rcgen, rustls-acme)
-- start proxy with those values (planning to use pingora)
+- [ ] setup [hardened docker image](https://hub.docker.com/hardened-images/catalog)
+- [x] add TOML config for domains (host: example.com, tls: self-signed|acme, upstream: 127.0.0.1:3000)
+- [x] setup init process to parse config
+- [ ] check SSL certs exist (rcgen, rustls-acme)
+- [ ] start proxy with those values (planning to use pingora)
 
 ## AI disclaimer
 

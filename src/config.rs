@@ -1,46 +1,56 @@
-use crate::{Error, Result};
+use crate::{
+	Error, Result,
+	core::models::{
+		certs::{CertDir, CertificateType, Email},
+		routes::{Host, Route, Upstream},
+		tasks::TaskInterval,
+	},
+};
 use serde::Deserialize;
 use std::{env, fs};
 
+const CONFIG_PATH_ENV: &str = "CONFIG_PATH";
+const CERT_DIR: &str = ".certs/";
+// in milliseconds
+const CERT_BACKGROUND_TASK_INTERVAL: u64 = 250;
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
+	pub email: Email,
+	pub cert_dir: CertDir,
+	pub routes: Vec<Route>,
+	pub task_interval: TaskInterval,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ConfigTomlFile {
 	pub acme: Acme,
 	pub routes: Vec<Route>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Acme {
-	pub email: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct Route {
-	pub host: String,
-	pub upstream: String,
-	#[serde(default)]
-	pub tls: RouteTLS,
-}
-
-#[derive(Debug, Clone, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum RouteTLS {
-	SelfSigned,
-	#[default]
-	Acme,
+	pub email: Email,
 }
 
 impl Config {
 	pub fn init() -> Result<Self> {
-		let config_path = load_env("CONFIG_PATH")?;
-		let config = parse_toml_config(config_path)?;
+		let config_path = load_env(CONFIG_PATH_ENV)?;
+		let config_file = parse_toml_config(config_path)?;
 
-		Ok(config)
+		Ok(Config {
+			email: config_file.acme.email.clone(),
+			cert_dir: CertDir::from(CERT_DIR.to_string()),
+			routes: config_file.routes.clone(),
+			task_interval: TaskInterval::from(CERT_BACKGROUND_TASK_INTERVAL),
+		})
 	}
 }
 
-fn parse_toml_config(config_path: String) -> Result<Config> {
+fn parse_toml_config(config_path: String) -> Result<ConfigTomlFile> {
 	let content = fs::read_to_string(config_path)?;
-	let config: Config = toml::from_str(&content).map_err(|e| Error::Config(e.to_string()))?;
+	let config: ConfigTomlFile =
+		toml::from_str(&content).map_err(|e| Error::Config(e.to_string()))?;
 
 	Ok(config)
 }

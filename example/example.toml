@@ -1,16 +1,16 @@
 [acme]
-email    = "max@example.com"
+email       = "max@example.com"
 
 [[routes]]
-host     = "test.maxvanderschee.nl"
-upstream = "127.0.0.1:3000"
+host        = "test.maxvanderschee.nl"
+upstream    = "127.0.0.1:3000"
 
 [[routes]]
-host     = "git.example.com"
-upstream = "127.0.0.1:3001"
-tls      = "self_signed"    # default is "acme"
+host        = "git.example.com"
+upstream    = "127.0.0.1:3001"
+cert_type   = "self_signed"    # default is "acme"
 
 [[routes]]
-host     = "up.example.com"
-upstream = "127.0.0.1:3002"
-tls      = "self_signed"    # default is "acme"
+host        = "test.example.com"
+upstream    = "127.0.0.1:3002"
+cert_type   = "none"          # default is "acme"

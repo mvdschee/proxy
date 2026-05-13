@@ -19,12 +19,18 @@ unused = { level = "allow", priority = -1 }
 
 
 [dependencies]
-# config lib
+# Async
+tokio = { version = "1.52.3", features = ["full"] }
+
+# Certs
+rcgen = "0.14.8"
+
+# TOML
 toml = "1.1.2"
 
-# -- Json
+# Json
 serde = { version = "1.0", features = ["derive"] }
 
-# -- Others
+# Others
 thiserror = "2.0"
 chrono = { version = "0.4", features = ["serde"] }
