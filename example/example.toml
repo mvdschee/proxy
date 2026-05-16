@@ -8,5 +8,5 @@ cert_type   = "self_signed"    # default is "acme"
 
 [[routes]]
 host        = "test.example.com"
-upstream    = "127.0.0.1:3001"
-cert_type   = "self_signed"          # default is "acme"
+upstream    = "127.0.0.1:3000"
+cert_type   = "none"          # default is "acme"

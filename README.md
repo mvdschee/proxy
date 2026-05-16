@@ -7,8 +7,8 @@ I normally use `nginxproxy/nginx-proxy` as my proxy on my self-hosted projects, 
 - [ ] setup [hardened docker image](https://hub.docker.com/hardened-images/catalog)
 - [x] add TOML config for domains (host: example.com, tls: self-signed|acme, upstream: 127.0.0.1:3000)
 - [x] setup init process to parse config
-- [ ] check SSL certs exist (rcgen)
-- [ ] start proxy with those values (planning to use pingora)
+- [x] generate new self signed ssl on reboot (rcgen)
+- [x] start proxy with those values (with pingora)
 - [ ] V2 rustls-acme with lets encrypt
 
 ## AI disclaimer

@@ -1,6 +1,9 @@
 use crate::{
 	config::Config,
-	core::setup::{HandleCertificates, HandleFileSystem, HandleProxy},
+	core::{
+		models::proxy::ProxyConfig,
+		setup::{HandleCertificates, HandleFileSystem, HandleProxy},
+	},
 };
 pub use error::{Error, Result};
 use std::env;
@@ -30,7 +33,13 @@ fn main() -> Result<()> {
 	cert_handler.run()?;
 
 	// start the proxy
-	let proxy_handler = HandleProxy::new(config.cert_dir, config.routes)?;
+	let proxy_config = ProxyConfig {
+		cert_dir: config.cert_dir.clone(),
+		http_port: config.http_port,
+		https_port: config.https_port,
+		input_address: config.input_address,
+	};
+	let proxy_handler = HandleProxy::new(proxy_config, config.routes)?;
 	proxy_handler.run()?;
 
 	Err(Error::MainLoopClosed)

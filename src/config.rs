@@ -2,6 +2,7 @@ use crate::{
 	Error, Result,
 	core::models::{
 		certs::{CertDir, CertificateType, Email},
+		proxy::{ProxyInputAddress, ProxyPort},
 		routes::{Host, Route, Upstream},
 		tasks::TaskInterval,
 	},
@@ -11,15 +12,22 @@ use std::{env, fs};
 
 const CONFIG_PATH_ENV: &str = "CONFIG_PATH";
 const CERT_DIR: &str = ".certs/";
+const HTTP_PORT: u16 = 80;
+const HTTPS_PORT: u16 = 443;
+const INPUT_ADDRESS: &str = "0.0.0.0";
+
 // in seconds
 const CERT_BACKGROUND_TASK_INTERVAL: u64 = 120;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Config {
 	pub email: Email,
 	pub cert_dir: CertDir,
 	pub routes: Vec<Route>,
 	pub task_interval: TaskInterval,
+	pub http_port: ProxyPort,
+	pub https_port: ProxyPort,
+	pub input_address: ProxyInputAddress,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -43,6 +51,9 @@ impl Config {
 			cert_dir: CertDir::from(CERT_DIR.to_string()),
 			routes: config_file.routes.clone(),
 			task_interval: TaskInterval::from(CERT_BACKGROUND_TASK_INTERVAL),
+			http_port: ProxyPort::from(HTTP_PORT),
+			https_port: ProxyPort::from(HTTPS_PORT),
+			input_address: ProxyInputAddress::from(INPUT_ADDRESS.to_string()),
 		})
 	}
 }

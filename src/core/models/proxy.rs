@@ -1,8 +1,10 @@
 use crate::core::models::{
+	certs::CertDir,
 	filesystem::SafePath,
 	routes::{Host, Upstream},
 };
-use std::ops::Deref;
+use http::{Response, StatusCode, header};
+use std::{fmt, ops::Deref};
 
 #[derive(Debug, Clone)]
 pub struct ProxyRoute {
@@ -11,6 +13,14 @@ pub struct ProxyRoute {
 	pub tls: ProxyTls,
 	pub cert_path: SafePath,
 	pub key_path: SafePath,
+}
+
+#[derive(Debug, Clone)]
+pub struct ProxyConfig {
+	pub cert_dir: CertDir,
+	pub http_port: ProxyPort,
+	pub https_port: ProxyPort,
+	pub input_address: ProxyInputAddress,
 }
 
 // --- PROXY TLS ---
@@ -28,5 +38,47 @@ impl Deref for ProxyTls {
 impl From<bool> for ProxyTls {
 	fn from(s: bool) -> Self {
 		ProxyTls(s)
+	}
+}
+
+// --- HTTP(S) PORT ---
+#[derive(Debug, Clone)]
+pub struct ProxyPort(u16);
+
+impl Deref for ProxyPort {
+	type Target = u16;
+
+	fn deref(&self) -> &u16 {
+		&self.0
+	}
+}
+
+impl From<u16> for ProxyPort {
+	fn from(s: u16) -> Self {
+		ProxyPort(s)
+	}
+}
+
+// --- PROXY INPUT ADDRESS ---
+#[derive(Debug, Clone)]
+pub struct ProxyInputAddress(String);
+
+impl Deref for ProxyInputAddress {
+	type Target = String;
+
+	fn deref(&self) -> &String {
+		&self.0
+	}
+}
+
+impl fmt::Display for ProxyInputAddress {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{}", self.0)
+	}
+}
+
+impl From<String> for ProxyInputAddress {
+	fn from(s: String) -> Self {
+		ProxyInputAddress(s)
 	}
 }

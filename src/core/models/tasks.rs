@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::ops::Deref;
 
+// --- TASK INTERVAL ---
 #[derive(Debug, Clone, Deserialize)]
 pub struct TaskInterval(u64);
 

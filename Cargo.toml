@@ -17,7 +17,6 @@ unsafe_code = "forbid"
 dead_code = { level = "allow", priority = -1 }
 unused = { level = "allow", priority = -1 }
 
-
 [dependencies]
 # Async
 async-trait = "0.1.89"
@@ -37,4 +36,5 @@ thiserror = "2.0"
 chrono = { version = "0.4", features = ["serde"] }
 
 # HTTP
-pingora = { version = "0.8.0", features = ["proxy"] }
+http = "1.4.0"
+pingora = { version = "0.8.0", features = ["proxy", "boringssl"] }
