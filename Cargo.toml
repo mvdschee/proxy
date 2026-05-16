@@ -20,6 +20,7 @@ unused = { level = "allow", priority = -1 }
 
 [dependencies]
 # Async
+async-trait = "0.1.89"
 tokio = { version = "1.52.3", features = ["full"] }
 
 # Certs
@@ -34,3 +35,6 @@ serde = { version = "1.0", features = ["derive"] }
 # Others
 thiserror = "2.0"
 chrono = { version = "0.4", features = ["serde"] }
+
+# HTTP
+pingora = { version = "0.8.0", features = ["proxy"] }

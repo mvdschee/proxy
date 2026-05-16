@@ -19,6 +19,9 @@ pub enum Error {
 	#[error("certificate error: {0}")]
 	Certificate(String),
 
+	#[error("proxy error: {0}")]
+	Proxy(String),
+
 	#[error("config error: {0}")]
 	Config(String),
 

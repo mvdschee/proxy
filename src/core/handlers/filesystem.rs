@@ -20,6 +20,14 @@ pub fn write_file(file_path: SafePath, content: &[u8]) -> Result<()> {
 	Ok(())
 }
 
+pub fn check_file_exists(file_path: &SafePath) -> bool {
+	// foxguard: ignore[rs/no-path-traversal]
+	// validated with SafePath
+	let exists = Path::new(file_path.as_str()).exists();
+
+	exists
+}
+
 /// Constructs a safe path by joining `base` and `user_path` and normalizing it.
 /// It prevents directory traversal attacks by ensuring `user_path` does not escape `base` logically.
 /// Does not require the file to exist.

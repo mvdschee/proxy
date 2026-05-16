@@ -7,8 +7,9 @@ I normally use `nginxproxy/nginx-proxy` as my proxy on my self-hosted projects, 
 - [ ] setup [hardened docker image](https://hub.docker.com/hardened-images/catalog)
 - [x] add TOML config for domains (host: example.com, tls: self-signed|acme, upstream: 127.0.0.1:3000)
 - [x] setup init process to parse config
-- [ ] check SSL certs exist (rcgen, rustls-acme)
+- [ ] check SSL certs exist (rcgen)
 - [ ] start proxy with those values (planning to use pingora)
+- [ ] V2 rustls-acme with lets encrypt
 
 ## AI disclaimer
 
@@ -20,3 +21,7 @@ For this one I don't want to use AI to write the code. I want to keep my skills 
 - cleanup of the README and other text
 - setup my zed config for linting/checking/security
 - discussion about code solutions
+
+# ROADMAP
+
+- Make each part idiomatic after working V1
