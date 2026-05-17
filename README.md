@@ -1,4 +1,6 @@
-# proxy
+# Reverse Proxy
+
+<p align="center"><img src="reverse-proxy.jpg" alt="Architecture diagram" /></p>
 
 I normally use `nginxproxy/nginx-proxy` as my proxy on my self-hosted projects, but it always needs to be on the same network with `VIRTUAL_HOST` set for each docker compose instance. Not a big issue, but not how I like my projects to behave. I'll learn a lot writing my own (yes, old skool without AI) and end up with something simple and performant.
 
