@@ -1,0 +1,38 @@
+services:
+   proxy:
+      # Replace with the actual image
+      # image: ghcr.io/mvdschee/proxy:latest
+      build:
+         context: .
+         dockerfile: .docker/Dockerfile
+      ports:
+         - "80:8080"
+         - "443:8443"
+      # Lets upstream = "host.docker.internal:<port>" reach apps running
+      # on the host machine. Docker Desktop sets this automatically; the
+      # explicit mapping here makes Linux behave the same way.
+      extra_hosts:
+         - "host.docker.internal:host-gateway"
+      volumes:
+         - ./example/example.toml:/etc/proxy/config.toml:ro
+         - proxy-certs:/var/lib/proxy/certs
+      restart: unless-stopped
+      # Image runs as nonroot (uid 65532) with no extra capabilities.
+      read_only: true
+      security_opt:
+         - no-new-privileges:true
+      cap_drop:
+         - ALL
+      tmpfs:
+         - /tmp
+      healthcheck:
+         # Busybox `nc -z` confirms the HTTP listener is bound. It does
+         # not exercise the proxy path; the listener simply has to accept.
+         test: ["CMD", "nc", "-z", "127.0.0.1", "8080"]
+         interval: 30s
+         timeout: 3s
+         retries: 3
+         start_period: 5s
+
+volumes:
+   proxy-certs:
