@@ -37,7 +37,7 @@ Drop a `config.toml` next to the compose file (see [`example/example.toml`](exam
 
 ## Development roadmap
 
-- [ ] setup [hardened docker image](https://hub.docker.com/hardened-images/catalog)
+- [x] setup [hardened docker image](https://hub.docker.com/hardened-images/catalog)
 - [x] add TOML config for domains (host: example.com, tls: self-signed|acme, upstream: 127.0.0.1:3000)
 - [x] setup init process to parse config
 - [x] generate new self signed ssl on reboot (rcgen)

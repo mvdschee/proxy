@@ -103,9 +103,10 @@ impl HandleProxy {
 
 			let has_tls_files = check_file_exists(&key_path) && check_file_exists(&cert_path);
 
-			// missing cert files but cert_type is not None, skip
+			// We only show a warning so its easier to debug once its running,
+			// but we are not stopping any traffic.
 			if !has_tls_files && route.cert_type != CertificateType::None {
-				warn!("tls files not found for host `{}` but cert is expected", route.host);
+				warn!("Certificate files not found for host `{}` but is expected", route.host);
 			}
 
 			proxy_routes.push(ProxyRoute {
