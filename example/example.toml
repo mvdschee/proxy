@@ -3,10 +3,10 @@ email       = "max@example.com"
 
 [[routes]]
 host        = "git.example.com"
-upstream    = "127.0.0.1:3000"
-cert_type   = "self_signed"    # default is "acme"
+upstream    = "127.0.0.1:3000"   # use "host.docker.internal:3000" when using docker
+cert_type   = "self_signed"      # default is "acme"
 
 [[routes]]
 host        = "test.example.com"
-upstream    = "127.0.0.1:3000"
-cert_type   = "none"          # default is "acme"
+upstream    = "127.0.0.1:3000"   # use "host.docker.internal:3000" when using docker
+cert_type   = "none"             # default is "acme"

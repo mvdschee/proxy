@@ -11,9 +11,13 @@ use serde::Deserialize;
 use std::{env, fs};
 
 const CONFIG_PATH_ENV: &str = "CONFIG_PATH";
-const CERT_DIR: &str = ".certs/";
-const HTTP_PORT: u16 = 80;
-const HTTPS_PORT: u16 = 443;
+const CERT_DIR_ENV: &str = "CERT_DIR";
+const HTTP_PORT_ENV: &str = "HTTP_PORT";
+const HTTPS_PORT_ENV: &str = "HTTPS_PORT";
+
+const CERT_DIR_DEFAULT: &str = ".certs/";
+const HTTP_PORT_DEFAULT: u16 = 80;
+const HTTPS_PORT_DEFAULT: u16 = 443;
 const INPUT_ADDRESS: &str = "0.0.0.0";
 
 // in seconds
@@ -46,13 +50,21 @@ impl Config {
 		let config_path = load_env(CONFIG_PATH_ENV)?;
 		let config_file = parse_toml_config(config_path)?;
 
+		let cert_dir = load_env(CERT_DIR_ENV).unwrap_or_else(|_| CERT_DIR_DEFAULT.to_string());
+		let http_port =
+			load_env(HTTP_PORT_ENV).ok().and_then(|v| v.parse().ok()).unwrap_or(HTTP_PORT_DEFAULT);
+		let https_port = load_env(HTTPS_PORT_ENV)
+			.ok()
+			.and_then(|v| v.parse().ok())
+			.unwrap_or(HTTPS_PORT_DEFAULT);
+
 		Ok(Config {
 			email: config_file.acme.email.clone(),
-			cert_dir: CertDir::from(CERT_DIR.to_string()),
+			cert_dir: CertDir::from(cert_dir),
 			routes: config_file.routes.clone(),
 			task_interval: TaskInterval::from(CERT_BACKGROUND_TASK_INTERVAL),
-			http_port: ProxyPort::from(HTTP_PORT),
-			https_port: ProxyPort::from(HTTPS_PORT),
+			http_port: ProxyPort::from(http_port),
+			https_port: ProxyPort::from(https_port),
 			input_address: ProxyInputAddress::from(INPUT_ADDRESS.to_string()),
 		})
 	}
