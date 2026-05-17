@@ -6,14 +6,14 @@ I normally use `nginxproxy/nginx-proxy` as my proxy on my self-hosted projects, 
 
 ## Usage
 
-The image is published to GHCR as `ghcr.io/mvdschee/proxy`. It runs as a non-root user on a hardened Alpine base (DHI), exposes `8080` (HTTP) and `8443` (HTTPS) inside the container, and reads its config from `/etc/proxy/config.toml`. Certificates are persisted under `/var/lib/proxy/certs`.
+The image is published to GHCR as `ghcr.io/mvdschee/reverse-proxy`. It runs as a non-root user on a hardened Alpine base (DHI), exposes `8080` (HTTP) and `8443` (HTTPS) inside the container, and reads its config from `/etc/proxy/config.toml`. Certificates are persisted under `/var/lib/proxy/certs`.
 
 Minimal `docker-compose.yml`:
 
 ```yaml
 services:
    proxy:
-      image: ghcr.io/mvdschee/proxy:latest
+      image: ghcr.io/mvdschee/reverse-proxy:latest
       restart: unless-stopped
       ports:
          - "80:8080"
