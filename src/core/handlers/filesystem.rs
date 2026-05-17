@@ -28,8 +28,8 @@ pub fn check_file_exists(file_path: &SafePath) -> bool {
 	exists
 }
 
-/// Constructs a safe path by joining `base` and `user_path` and normalizing it.
-/// It prevents directory traversal attacks by ensuring `user_path` does not escape `base` logically.
+/// Constructs a safe path by joining `base` and `file_path` and normalizing it.
+/// It prevents directory traversal attacks by ensuring `file_path` does not escape `base` logically.
 /// Does not require the file to exist.
 pub fn safe_path(base: &str, file_path: &str) -> Result<SafePath> {
 	// foxguard: ignore[rs/no-path-traversal]
