@@ -4,7 +4,9 @@ use crate::core::models::{
 	routes::{Host, Upstream},
 };
 use http::{Response, StatusCode, header};
-use std::{fmt, ops::Deref};
+use std::{collections::HashMap, fmt, ops::Deref, sync::Arc};
+
+pub type ProxyRouteMap = Arc<HashMap<Host, ProxyRoute>>;
 
 #[derive(Debug, Clone)]
 pub struct ProxyRoute {

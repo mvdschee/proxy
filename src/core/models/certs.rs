@@ -1,7 +1,13 @@
 use crate::core::models::routes::Host;
+use pingora::tls::{
+	pkey::{PKey, Private},
+	x509::X509,
+};
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fmt;
 use std::ops::Deref;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "snake_case")]
@@ -19,6 +25,13 @@ pub struct Certificate {
 	pub email: Email,
 	pub cert_type: CertificateType,
 }
+
+pub struct TlsMaterial {
+	pub cert: X509,
+	pub key: PKey<Private>,
+}
+
+pub type TlsCerts = Arc<HashMap<Host, TlsMaterial>>;
 
 // --- EMAIL ---
 #[derive(Debug, Clone, Deserialize)]

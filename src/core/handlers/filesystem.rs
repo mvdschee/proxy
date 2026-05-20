@@ -20,6 +20,13 @@ pub fn write_file(file_path: SafePath, content: &[u8]) -> Result<()> {
 	Ok(())
 }
 
+pub fn read_file(file_path: &SafePath) -> Result<Vec<u8>> {
+	let file = fs::read(file_path.as_str())
+		.map_err(|e| Error::FileSystem(format!("Failed to read {}: {}", file_path, e)))?;
+
+	Ok(file)
+}
+
 pub fn check_file_exists(file_path: &SafePath) -> bool {
 	// foxguard: ignore[rs/no-path-traversal]
 	// validated with SafePath

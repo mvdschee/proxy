@@ -11,13 +11,19 @@ pub struct Route {
 }
 
 // --- HOST ---
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Hash, Eq, PartialEq)]
 pub struct Host(String);
 
 impl Deref for Host {
 	type Target = String;
 
 	fn deref(&self) -> &String {
+		&self.0
+	}
+}
+
+impl std::borrow::Borrow<str> for Host {
+	fn borrow(&self) -> &str {
 		&self.0
 	}
 }

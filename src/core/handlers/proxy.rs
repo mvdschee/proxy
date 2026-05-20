@@ -1,21 +1,30 @@
 use crate::{
 	Error, Result,
-	core::models::proxy::{ProxyConfig, ProxyRoute},
+	core::{
+		handlers::filesystem::read_file,
+		models::{
+			certs::{TlsCerts, TlsMaterial},
+			proxy::{ProxyConfig, ProxyRoute, ProxyRouteMap},
+			routes::Host,
+		},
+	},
+	error,
 };
 use async_trait::async_trait;
 use http::{Response, header};
 use pingora::{
+	ErrorType,
 	apps::http_app::ServeHttp,
-	http::StatusCode,
-	prelude::{HttpPeer, Result as PingoraResult},
+	http::{ResponseHeader, StatusCode},
+	listeners::{TlsAccept, tls::TlsSettings},
+	prelude::{Error as PingoraError, HttpPeer, Result as PingoraResult},
 	protocols::http::ServerSession,
 	proxy::{ProxyHttp, Session, http_proxy_service},
 	server::{Server, configuration::ServerConf},
 	services::{Service, listening::Service as ListeningService},
+	tls::{self, ssl},
 };
-use std::sync::Arc;
-
-static BODY: &[u8] = "<html><body>301 Moved Permanently</body></html>".as_bytes();
+use std::{collections::HashMap, sync::Arc};
 
 pub fn run_proxy(proxy_config: ProxyConfig, routes: Vec<ProxyRoute>) -> Result<()> {
 	let mut server = Server::new(None).map_err(|e| Error::Proxy(e.to_string()))?;
@@ -26,89 +35,92 @@ pub fn run_proxy(proxy_config: ProxyConfig, routes: Vec<ProxyRoute>) -> Result<(
 	let http_addr = format!("{}:{}", proxy_config.input_address, *proxy_config.http_port);
 	let https_addr = format!("{}:{}", proxy_config.input_address, *proxy_config.https_port);
 
+	let mut routes_map = HashMap::new();
+	let mut tls_certs = HashMap::new();
+
+	for route in routes {
+		if *route.tls {
+			let cert_bytes = read_file(&route.cert_path)?;
+			let cert = tls::x509::X509::from_pem(&cert_bytes)
+				.map_err(|e| Error::Certificate(format!("Failed to parse certificate: {}", e)))?;
+
+			let key_bytes = read_file(&route.key_path)?;
+			let key = tls::pkey::PKey::private_key_from_pem(&key_bytes)
+				.map_err(|e| Error::Certificate(format!("Failed to parse private key: {}", e)))?;
+
+			tls_certs.insert(
+				route.host.clone(),
+				TlsMaterial {
+					cert,
+					key,
+				},
+			);
+		}
+
+		routes_map.insert(route.host.clone(), route);
+	}
+
+	let routes_map = Arc::new(routes_map);
+	let tls_certs = Arc::new(tls_certs);
+
+	// plain proxies with redirect
+	let plain_service =
+		plain_routes_service(server_conf.clone(), http_addr.clone(), routes_map.clone())?;
+	server.add_service(plain_service);
+
 	// tls proxies
-	let tls_services =
-		tls_routes_services(server_conf.clone(), https_addr.clone(), routes.clone())?;
-
-	for service in tls_services {
-		server.add_service(service);
-	}
-
-	// redirect to tls proxies
-	let redirect_service = http_redirect_service(http_addr.clone());
-
-	server.add_service(redirect_service);
-	// plain proxies
-	let plain_services = plain_routes_services(server_conf, http_addr.clone(), routes.clone())?;
-
-	for service in plain_services {
-		server.add_service(service);
-	}
+	let tls_service =
+		tls_routes_service(server_conf, https_addr.clone(), routes_map.clone(), tls_certs)?;
+	server.add_service(tls_service);
 
 	server.run_forever();
 
 	Err(Error::Proxy("proxy stopped".to_string()))
 }
 
-pub fn tls_routes_services(
+pub fn tls_routes_service(
 	server_conf: Arc<ServerConf>,
 	listen_addr: String,
-	routes: Vec<ProxyRoute>,
-) -> Result<Vec<impl Service>> {
-	let mut services = Vec::new();
+	routes_map: ProxyRouteMap,
+	tls_certs: TlsCerts,
+) -> Result<impl Service> {
+	let proxy_app = ProxyToUpstream::new(routes_map.clone(), false);
 
-	let tls_routes = routes.into_iter().filter(|route| *route.tls == true).collect::<Vec<_>>();
-
-	for route in tls_routes {
-		let proxy_app = ProxyToUpstream::new(route.clone());
-
-		let mut service = http_proxy_service(&server_conf, proxy_app);
-		service
-			.add_tls(&listen_addr, &route.cert_path, &route.key_path)
-			.map_err(|e| Error::Proxy(e.to_string()));
-
-		services.push(service);
-	}
-
-	Ok(services)
-}
-
-pub fn plain_routes_services(
-	server_conf: Arc<ServerConf>,
-	listen_addr: String,
-	routes: Vec<ProxyRoute>,
-) -> Result<Vec<impl Service>> {
-	let mut services = Vec::new();
-
-	let plain_routes = routes.into_iter().filter(|route| *route.tls == false).collect::<Vec<_>>();
-
-	for route in plain_routes {
-		let proxy_app = ProxyToUpstream::new(route.clone());
-
-		let mut service = http_proxy_service(&server_conf, proxy_app);
-		service.add_tcp(&listen_addr);
-
-		services.push(service);
-	}
-
-	Ok(services)
-}
-
-fn http_redirect_service(listen_addr: String) -> impl Service {
-	let mut service = ListeningService::new("HTTPS Redirect".to_string(), RedirectToHttps {});
+	let mut service = http_proxy_service(&server_conf, proxy_app);
 	service.add_tcp(&listen_addr);
 
-	service
+	let sni_resolver = SniResolver::new(tls_certs);
+	let callback = Box::new(sni_resolver);
+	let tls_settings =
+		TlsSettings::with_callbacks(callback).map_err(|e| Error::Proxy(e.to_string()))?;
+	service.add_tls_with_settings(&listen_addr, None, tls_settings);
+
+	Ok(service)
+}
+
+pub fn plain_routes_service(
+	server_conf: Arc<ServerConf>,
+	listen_addr: String,
+	routes_map: ProxyRouteMap,
+) -> Result<impl Service> {
+	let proxy_app = ProxyToUpstream::new(routes_map, true);
+
+	let mut service = http_proxy_service(&server_conf, proxy_app);
+	service.add_tcp(&listen_addr);
+
+	Ok(service)
 }
 
 pub struct ProxyToUpstream {
-	route: ProxyRoute,
+	routes_map: ProxyRouteMap,
+	upgrade_to_https: bool,
 }
 
 impl ProxyToUpstream {
-	pub fn new(route: ProxyRoute) -> Self {
+	pub fn new(routes_map: ProxyRouteMap, upgrade_to_https: bool) -> Self {
 		Self {
-			route,
+			routes_map,
+			upgrade_to_https,
 		}
 	}
 }
@@ -118,36 +130,106 @@ impl ProxyHttp for ProxyToUpstream {
 	type CTX = ();
 	fn new_ctx(&self) {}
 
+	// ProxyToUpstream is shared with both HTTP and HTTPS
+	// here we do a quick check to upgrade to HTTPS if its a TLS route
+	async fn request_filter(&self, session: &mut Session, _ctx: &mut ()) -> PingoraResult<bool> {
+		if self.upgrade_to_https {
+			let host = host_from_session(session)
+				// 400 bad request no host
+				.ok_or_else(|| PingoraError::new(ErrorType::HTTPStatus(400)))?;
+
+			match self.routes_map.get(host) {
+				// 421 Misdirected Request doesnt match any hosts
+				None => {
+					error!("no route for host: {}", host);
+					let header = ResponseHeader::build(421, None)?;
+					session.write_response_header(Box::new(header), true).await?;
+					return Ok(true);
+				},
+				// 301 Moved Permanently redirect to https
+				Some(route) if *route.tls => {
+					let mut header = ResponseHeader::build(301, None)?;
+					header.insert_header(header::LOCATION, format!("https://{}", route.host))?;
+					header.insert_header(header::CONTENT_LENGTH, 0)?;
+
+					session.write_response_header(Box::new(header), true).await?;
+
+					return Ok(true);
+				},
+				// All good let it pass.
+				Some(_) => return Ok(false),
+			}
+		}
+
+		Ok(false)
+	}
+
 	async fn upstream_peer(
 		&self,
 		session: &mut Session,
 		_ctx: &mut (),
 	) -> PingoraResult<Box<HttpPeer>> {
-		// foxguard: ignore[rs/no-unwrap-in-lib]
-		let host_header = session.get_header(header::HOST).unwrap().to_str().unwrap();
+		let host = host_from_session(session)
+			// 400 bad request no host
+			.ok_or_else(|| PingoraError::new(ErrorType::HTTPStatus(400)))?;
 
-		let proxy_to =
-			HttpPeer::new(self.route.upstream.as_str(), false, self.route.host.to_string());
+		let route = self
+			.routes_map
+			.get(host)
+			// 421 Misdirected Request doesnt match any hosts
+			.ok_or_else(|| PingoraError::new(ErrorType::HTTPStatus(421)))?;
+
+		let proxy_to = HttpPeer::new(route.upstream.as_str(), false, route.host.to_string());
 		let peer = Box::new(proxy_to);
 		Ok(peer)
 	}
 }
 
-pub struct RedirectToHttps;
+// note to self we are not stripping port from the host header
+// so Host: example.com:443 will be rejected with a 421
+// this is a strict design decision not a bug
+fn host_from_session(session: &Session) -> Option<&str> {
+	session.get_header(header::HOST).and_then(|h| h.to_str().ok())
+}
+
+struct SniResolver {
+	certs: TlsCerts,
+}
+
+impl SniResolver {
+	fn new(tls_certs: TlsCerts) -> Self {
+		Self {
+			certs: tls_certs,
+		}
+	}
+}
 
 #[async_trait]
-impl ServeHttp for RedirectToHttps {
-	async fn response(&self, http_stream: &mut ServerSession) -> Response<Vec<u8>> {
-		// foxguard: ignore[rs/no-unwrap-in-lib]
-		let host_header = http_stream.get_header(header::HOST).unwrap().to_str().unwrap();
+impl TlsAccept for SniResolver {
+	async fn certificate_callback(&self, ssl: &mut ssl::SslRef) -> () {
+		let sni_provided = ssl.servername(ssl::NameType::HOST_NAME).map(str::to_owned);
 
-		Response::builder()
-			.status(StatusCode::MOVED_PERMANENTLY)
-			.header(header::CONTENT_TYPE, "text/html")
-			.header(header::CONTENT_LENGTH, BODY.len())
-			.header(header::LOCATION, format!("https://{host_header}"))
-			.body(BODY.to_owned())
-			// foxguard: ignore[rs/no-unwrap-in-lib]
-			.unwrap()
+		let Some(sni_provided) = sni_provided else {
+			error!("No SNI provided");
+			return;
+		};
+
+		let Some(TlsMaterial {
+			cert,
+			key,
+		}) = self.certs.get(sni_provided.as_str())
+		else {
+			error!("No certificate found for SNI: {}", sni_provided);
+			return;
+		};
+
+		if let Err(e) = tls::ext::ssl_use_certificate(ssl, cert) {
+			error!("Failed to use certificate for SNI {}: {}", sni_provided, e);
+			return;
+		}
+		if let Err(e) = tls::ext::ssl_use_private_key(ssl, key) {
+			error!("Failed to use private key for SNI {}: {}", sni_provided, e);
+			return;
+		}
 	}
 }
