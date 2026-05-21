@@ -87,7 +87,6 @@ pub fn tls_routes_service(
 	let proxy_app = ProxyToUpstream::new(routes_map.clone(), false);
 
 	let mut service = http_proxy_service(&server_conf, proxy_app);
-	service.add_tcp(&listen_addr);
 
 	let sni_resolver = SniResolver::new(tls_certs);
 	let callback = Box::new(sni_resolver);
